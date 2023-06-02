@@ -60,7 +60,7 @@ from datetime import (
 
 
 def parallal_task(worker, func, iterable, **kwargs): 
-    with open('../multi_fun_box/{}.py'.format(func.__name__), 'w', encoding="utf-8") as file:
+    with open('./multi_fun_box/{}.py'.format(func.__name__), 'w', encoding="utf-8") as file:
         file.write(inspect.getsource(func)) 
     
     module = import_module("multi_fun_box.{}".format(func.__name__))

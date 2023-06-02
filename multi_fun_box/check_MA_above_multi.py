@@ -3,7 +3,8 @@ def check_MA_above_multi(hy_tuple, self_obj):
        :param hy_tuple: (bloc_kname, hy_codes)
     """
     import QUANTAXIS as QA
-    import Ind_Ponding_VIX
+    # from ind.ind_base.Ind_PondingRate_VIX import PondingRate as Ind_Ponding_VIX
+    from ind.ind_base import Ind_PondingRate_VIX as Ind_Ponding_VIX
     import dill
     import pandas as pd
     import numpy as np
@@ -35,7 +36,7 @@ def check_MA_above_multi(hy_tuple, self_obj):
 
     ind = pr.ind_df['main']
     count = len(hy_codes)
-    compared = ind[(self_.MA-1)*count:] > ind.groupby(level=1).apply(lambda x: QA.MA(x, self_.MA))[(self_.MA-1)*count:]
+    compared = ind[(self_.MA-1)*count:] > ind.groupby(level=1, group_keys=False).apply(lambda x: QA.MA(x, self_.MA))[(self_.MA-1)*count:]
     if self_.frequence in LOW_FREQUENCE:
         date_label = 'date'
     else:
