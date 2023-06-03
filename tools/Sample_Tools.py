@@ -78,7 +78,7 @@ def get_index_data(code, start=None, end=None, gap=60, freq=QA.FREQUENCE.DAY):
     '''
     assert ((not start is None) or (not end is None)), 'start 和 end 必须有一个'
     if start is None:
-        start_ = QA_util_get_next_trade_date(end, gap*-1)(end, gap*-1)  # trade_date_sse[trade_date_sse.index(end) - gap]
+        start_ = QA_util_get_next_trade_date(end, gap*-1)#(end, gap*-1)  # trade_date_sse[trade_date_sse.index(end) - gap]
     else:
         start_ = start
     if end is None:
@@ -188,7 +188,7 @@ def get_rank(data, codes=None,quantile=False, column=None):
             res = res.loc[codes]
     return res
 
-def add_industry(stocks_df, hy_source='swhy', inplace=True):
+def add_industry(stocks_df, hy_source='tdxhy', inplace=True):
     '''向stock的DataFrame中插入行业数据
         :param stocks_df: --stock的DataFrame
         :param hy_source: {str in ['gn', 'tdxhy', 'zs', 'fg', 'swhy' 'yb', 'csindex']} --指明数据来源
@@ -208,6 +208,7 @@ def add_report_inds(data_df, inds_names=['totalCapital']):
     date_start = get_pre_report_date(date_.min())
     date_end = get_next_report_date(date_.max())
     report_df = QA.QA_fetch_financial_report_adv(codes, date_start,date_end,ltype='EN').data[inds_names]
+    report_df.index.names = ['date', 'code']
 
     data_ = pd.concat([data_df,report_df], axis=1)
     data_[inds_names] = excute_for_multidates(data_[inds_names],lambda x:x.fillna(method='ffill'),level=1)
