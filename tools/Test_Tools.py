@@ -102,6 +102,7 @@ class FactorTest():
         
         # 为保证ind_Model_Class信息的完整性，使用重采样前的数据来生成指标，后面会另外再重采样。
         ind_obj = self.ind_Model_Class(data.data) 
+        ind_obj.set_fast_mode(False)
         ind_obj.fit()
         ind = pd.DataFrame(ind_obj.ind_df[self.main_field])
         ind.dropna(axis=0,inplace=True)
@@ -112,10 +113,10 @@ class FactorTest():
             ind_close.dropna(axis=0,inplace=True)
             ind_added = smpl.add_marketvalue_industry(ind_close, static_mv=self.neutralize.get('static_mv',False))
 #             self.indx1 = ind_added
-            x = ind_added[['totalCapital','industry']].sort_index()
+            x = ind_added[['market_value','industry']].sort_index()
             # x = ind_added[['liquidity_totalCapital','industry']]
             y = ind_added.iloc[:,0].sort_index()
-            ind = pretreat.neutralize(y, x, categorical=['industry'], logarithmetics=['totalCapital'])
+            ind = pretreat.neutralize(y, x, categorical=['industry'], logarithmetics=['market_value'])
             
              # 取消因子标准化，很多时候标准化后的rank_ic的结果，与分箱测试观测结果不符
 #             factor_standardized = pretreat.standardize(ind, multi_code=True)
