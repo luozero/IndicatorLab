@@ -23,7 +23,7 @@ from numpy.lib.stride_tricks import as_strided as stride
 import pandas as pd
 import numpy as np
 from random import randint
-import pymongo
+# import pymongo
 
 from datetime import (
     date as da,
