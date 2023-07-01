@@ -10,6 +10,7 @@ import pandas as pd
 from datetime import datetime
 import scipy.stats as stats
 import matplotlib.pyplot as plt
+import copy
 
 
 import sys
@@ -152,7 +153,7 @@ def decay_linear(df, period):
 
 # 因子函数
 def alpha1(close, returns):
-    x = close
+    x =  copy.deepcopy(close)
     x[returns < 0] = stddev(returns, 20)
     alpha = rank(ts_argmax(x ** 2, 5))-0.5
     return alpha
