@@ -8,8 +8,14 @@ from qaenv import (clickhouse_ip, clickhouse_password, clickhouse_port,
 
 class FactorBase():
     def __init__(self, factor_name="QAF_test", host=clickhouse_ip, port=clickhouse_port, user=clickhouse_user, password=clickhouse_password,):
+        
+        database='factor'
+
         self.client = clickhouse_driver.Client(host=host, port=port, user=user, password=password,
-                                               database='factor')
+                                               database=database)
+
+        self.client.execute("CREATE DATABASE IF NOT EXISTS {}".format(database))
+        # self.client.execute('CREATE DATABASE IF NOT EXISTS factor')
 
         self.client.execute("CREATE TABLE IF NOT EXISTS \
                 `factor`.`factormetadata` (\
@@ -101,7 +107,7 @@ class FactorBase():
             'description': self.description
         }])
 
-    def calc(self) -> pd.DataFrame:
+    def calc(self, start_date, end_date, code_list) -> pd.DataFrame:
         """
 
         the resulf of this function should be a dataframe with the folling columns
