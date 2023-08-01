@@ -235,6 +235,7 @@ def add_marketvalue_industry(df:pd.DataFrame, static_mv:bool=False):
         df_reported = QA_data_marketvalue(df_)
         df_reported.rename(columns=lambda x:x.replace('mv','market_value'), inplace=True)
         
+    # add_industry(df_reported, hy_source = 'sw_l1')
     add_industry(df_reported)
     
     df_reported.dropna(axis=0,inplace=True)

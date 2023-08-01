@@ -60,11 +60,11 @@ from datetime import (
 
 
 def parallal_task(worker, func, iterable, **kwargs): 
-    with open('./multi_fun_box/{}.py'.format(func.__name__), 'w', encoding="utf-8") as file:
-        file.write(inspect.getsource(func)) 
+    # with open('./multi_fun_box/{}.py'.format(func.__name__), 'w', encoding="utf-8") as file:
+    #     file.write(inspect.getsource(func)) 
     
-    module = import_module("multi_fun_box.{}".format(func.__name__))
-    task = getattr(module, func.__name__)
+    # module = import_module("multi_fun_box.{}".format(func.__name__))
+    # task = getattr(module, func.__name__)
 
     freeze_support()
     '子进程PID：', os.getpid(), '主进程PPID', os.getppid()
@@ -75,7 +75,8 @@ def parallal_task(worker, func, iterable, **kwargs):
         worker = cpu_count()
         
     p=Pool(processes = worker)
-    func_ = partial(task,**kwargs)
+    # func_ = partial(task,**kwargs)
+    func_ = partial(func,**kwargs)
 #     res = list(tqdm(p.imap_unordered(func_, iterable), total=len(iterable)))
     res = list(tqdm(p.imap(func_, iterable), total=len(iterable)))
 #     res = list(p.imap_unordered(func_, iterable))
