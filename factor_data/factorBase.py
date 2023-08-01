@@ -92,8 +92,8 @@ class FactorBase():
 
         self.client.execute('OPTIMIZE TABLE {} FINAL'.format(self.factor_name))
 
-    def update_to_database(self):
-        self.insert_data(self.calc())
+    def update_to_database(self, code_list, start_date, end_date):
+        self.insert_data(self.calc(code_list, start_date, end_date))
         self.update_metadb()
 
     def update_metadb(self):
@@ -107,7 +107,7 @@ class FactorBase():
             'description': self.description
         }])
 
-    def calc(self, start_date, end_date, code_list) -> pd.DataFrame:
+    def calc(self, code_list, start_date, end_date) -> pd.DataFrame:
         """
 
         the resulf of this function should be a dataframe with the folling columns
