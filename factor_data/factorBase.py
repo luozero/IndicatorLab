@@ -4,6 +4,7 @@ import clickhouse_driver
 import pandas as pd
 from qaenv import (clickhouse_ip, clickhouse_password, clickhouse_port,
                    clickhouse_user)
+import numpy as np
 
 
 class FactorBase():
@@ -32,7 +33,6 @@ class FactorBase():
         self.description = 'None'
         self.finit()
         if not self.check_if_exist():
-            print('start register')
             self.register()
             self.init_database()
 
@@ -51,7 +51,6 @@ class FactorBase():
         return self.client.query_dataframe('show tables').name.tolist()
 
     def check_if_exist(self):
-        print(self.tablelist)
         return self.factor_name in self.tablelist
 
     def init_database(self):
@@ -79,7 +78,7 @@ class FactorBase():
 
         # check the data
         data = data.assign(date=pd.to_datetime(data.date),
-                           factor=data.factor.apply(float))
+                           factor=np.float32(data.factor))
         columns = data.columns
         if 'date' not in columns or 'factor' not in columns:
             raise Exception('columns not exists')
