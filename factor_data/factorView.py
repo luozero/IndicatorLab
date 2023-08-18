@@ -19,13 +19,20 @@ class FactorView():
     def get_all_tables(self):
         return self.client.query_dataframe('show tables').drop_duplicates()
 
-    def get_single_factor(self, factorname, start=None, end=None):
+    def get_single_factor(self, factorname, code_list = None, start=None, end=None):
         print(factorname)
         if start is None and end is None:
-            res = self.client.query_dataframe(
-                'select * from {}'.format(factorname))
+            if code_list is None:
+              res = self.client.query_dataframe(
+                  'select * from {}'.format(factorname))
+            else:
+              res = self.client.query_dataframe(
+                  'select * from {} where (`code` IN ({}))'.format(factorname, "'{}'".format("','".join(code_list))))
         else:
-            res =  self.client.query_dataframe("select * from {} where ((`date` >= '{}')) AND (`date` <= '{}') ".format(factorname, start, end))
+            if code_list is None:
+              res =  self.client.query_dataframe("select * from {} where (`date` >= '{}') AND (`date` <= '{}')".format(factorname, start, end))
+            else:
+              res =  self.client.query_dataframe("select * from {} where (`date` >= '{}') AND (`date` <= '{}') AND `code` IN ({}) ".format(factorname, start, end, "'{}'".format("','".join(code_list))))
         if len(res) > 0:
 
             res.columns = ['date', 'code', factorname]
@@ -39,10 +46,10 @@ class FactorView():
             "ALTER TABLE factormetadata DELETE WHERE factorname='{}'".format(factorname))
         self.client.execute('drop table {}'.format(factorname))
 
-    def get_all_factor_values(self, factorlist=None, start=None, end=None):
+    def get_all_factor_values(self, factorlist=None, code_list = None, start=None, end=None):
         factorlist = self.get_all_factorname() if factorlist is None else factorlist
 
-        res = pd.concat([self.get_single_factor(factor, start, end)
+        res = pd.concat([self.get_single_factor(factor, code_list, start, end)
                          for factor in factorlist], axis=1)
 
         return res

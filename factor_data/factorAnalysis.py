@@ -11,6 +11,7 @@ from qaenv import (clickhouse_ip, clickhouse_password, clickhouse_port,
 from factorClickhouse import FactorCKClient
 from QUANTAXIS.QAUtil import QA_util_get_next_day
 from scipy import stats
+import QUANTAXIS as QA
 
 """
 本模块大量基于 QACkClient 目前 ck 的公共服务器暂时尚未开放, 仅供参考和测试使用
@@ -27,16 +28,16 @@ get_barra
 
 
 class FactorAnalysis():
-    def __init__(self, featuredata, feature_name=None, stock_data=None, returnday=5,
+    def __init__(self, factordata, factor_name=None, stock_data=None, returnday=5,
                  host=clickhouse_ip, port=clickhouse_port, user=clickhouse_user, password=clickhouse_password) -> None:
 
-        self.feature = featuredata
-        self.featurename = featuredata.name if feature_name is None else feature_name
-        self.feature.name = self.featurename
+        self.factor = factordata
+        self.factorname = factordata.name if factor_name is None else factor_name
+        self.factor.name = self.factorname
 
-        self.codelist = self.feature.index.levels[1].unique().tolist()
-        self.start = str(self.feature.index.levels[0][0])[0:10]
-        self.end = str(self.feature.index.levels[0][-1])[0:10]
+        self.codelist = self.factor.index.levels[1].unique().tolist()
+        self.start = str(self.factor.index.levels[0][0])[0:10]
+        self.end = str(self.factor.index.levels[0][-1])[0:10]
 
         self._host = host
         self._port = port
@@ -46,12 +47,13 @@ class FactorAnalysis():
         self.factorclient = clickhouse_driver.Client(host=self._host, port=self._port, user=self._user, password=self._password,
                                                      database='factor')
 
-        self.dataclient = QACKClient(
-            host=self._host, port=self._port, user=self._user, password=self._password)
+        # self.dataclient = FactorCKClient(
+        #     host=self._host, port=self._port, user=self._user, password=self._password)
 
         if stock_data is None:
-            self.stock_data = self.dataclient.get_stock_day_qfq_adv(
-                self.codelist, self.start, QA_util_get_next_day(self.end, returnday))
+            # self.stock_data = self.dataclient.get_stock_day_qfq_adv(
+            #     self.codelist, self.start, QA_util_get_next_day(self.end, returnday))
+            self.stock_data =  QA.QA_fetch_stock_day_adv(self.codelist, self.start, QA_util_get_next_day(self.end, returnday))
         else:
             self.stock_data = stock_data
 
@@ -80,25 +82,26 @@ class FactorAnalysis():
     @property
     @lru_cache()
     def rank(self):
-        res = self.feature.groupby(level=0).rank()
+        res = self.factor.groupby(level=0).rank()
         res.columns = [res.columns[0] + '_rank']
         return res
 
     def apply_rank(self):
-        return QAFeatureAnalysis(self.rank, stock_data=self.stock_data, host=self._host, port=self._port, user=self._user, password=self._password)
+        return FactorAnalysis(self.rank, stock_data=self.stock_data, host=self._host, port=self._port, user=self._user, password=self._password)
 
     @property
     @lru_cache()
     def factor_and_forward_returns(self):
-        feature = self.feature.reset_index()
-        feature = feature.assign(date=pd.to_datetime(
-            feature.date)).set_index('date')
-        feature.index = feature.index.tz_localize('UTC')
-        feature = feature.reset_index().set_index(['date', 'code'])
+        factor = self.factor.reset_index()
+        factor = factor.assign(date=pd.to_datetime(
+            factor.date)).set_index('date')
+        factor.index = factor.index.tz_localize('UTC')
+        factor = factor.reset_index().set_index(['date', 'code'])
 
-        panelprice = deepcopy(self.stock_data.closepanel)
+        panelprice = deepcopy(self.stock_data['close'])
+        panelprice = panelprice.unstack()
         panelprice.index = pd.to_datetime(panelprice.index).tz_localize('UTC')
-        return get_clean_factor_and_forward_returns(feature,
+        return get_clean_factor_and_forward_returns(factor,
                                                     panelprice,
                                                     groupby=None,
                                                     binning_by_group=False,
@@ -107,7 +110,7 @@ class FactorAnalysis():
                                                     periods=(1, 5, 10),
                                                     filter_zscore=20,
                                                     groupby_labels=None,
-                                                    max_loss=0.15,
+                                                    max_loss=0.20,
                                                     zero_aware=False,
                                                     cumulative_returns=True)
 
@@ -117,7 +120,7 @@ class FactorAnalysis():
     @property
     @lru_cache()
     def concatRes(self):
-        res = pd.concat([self.feature, self.returns, ], axis=1)
+        res = pd.concat([self.factor, self.returns, ], axis=1)
 
         res = pd.concat([res, self.get_industry().set_index(['date','order_book_id']).first_industry_name], axis=1)
         return res
@@ -136,7 +139,8 @@ class FactorAnalysis():
         return self.ic.rolling(20).apply(lambda x: x.mean()/x.std())
 
     def get_benchmark(self, benchmarkcode='000905.XSHG'):
-        return self.dataclient.get_index_day(benchmarkcode, self.start, self.end)
+        # return self.dataclient.get_index_day(benchmarkcode, self.start, self.end)
+        return QA.QA_fetch_index_day(benchmarkcode, self.start, self.end)
 
     def get_industry(self):
         """
@@ -148,7 +152,8 @@ class FactorAnalysis():
         stock2      B
 
         """
-        return self.dataclient.get_stock_industry(self.codelist, self.start, self.end)
+        # return self.dataclient.get_stock_industry(self.codelist, self.start, self.end)
+        return QA.QA_fetch_stock_block_adv(self.codelist)
 
 
     def categorical(self, data: pd.DataFrame, key='industry'):
@@ -204,13 +209,13 @@ class FactorAnalysis():
         使用 concatRes 保证数据对齐
         """
 
-        feature_data = self.concatRes.iloc[:, 0]
+        factor_data = self.concatRes.iloc[:, 0]
         return_data = self.concatRes.iloc[:, 1]
 
-        cor_pearson = feature_data.corr(return_data, method='pearson')
-        cor_spearman = feature_data.corr(return_data, method='spearman')
-        t_stat = stats.ttest_ind(feature_data, return_data).statistic
-        p_value = stats.ttest_ind(feature_data, return_data).pvalue
+        cor_pearson = factor_data.corr(return_data, method='pearson')
+        cor_spearman = factor_data.corr(return_data, method='spearman')
+        t_stat = stats.ttest_ind(factor_data, return_data).statistic
+        p_value = stats.ttest_ind(factor_data, return_data).pvalue
 
         return pd.DataFrame({
             'cor_pearson': [cor_pearson],
