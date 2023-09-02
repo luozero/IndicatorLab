@@ -1,3 +1,5 @@
+import os
+
 
 from IPython.display import display
 import inspect
@@ -75,6 +77,30 @@ def parallal_task(worker, func, iterable, **kwargs):
         worker = cpu_count()
         
     p=Pool(processes = worker)
+    # func_ = partial(task,**kwargs)
+    func_ = partial(func,**kwargs)
+#     res = list(tqdm(p.imap_unordered(func_, iterable), total=len(iterable)))
+    res = list(tqdm(p.imap(func_, iterable), total=len(iterable)))
+#     res = list(p.imap_unordered(func_, iterable))
+    p.close()
+    p.join()
+    return res
+
+def parallal_task_coreID(coreID, func, iterable, **kwargs): 
+
+    freeze_support()
+    '子进程PID：', os.getpid(), '主进程PPID', os.getppid()
+    print('Now in the main code. Process name is:', __name__)
+    print(('%s, subpid:%d  pid:%d') % (__name__, os.getpid(),os.getppid()))
+    
+    worker = len(coreID)
+    if worker == None or worker ==0:
+        worker = cpu_count()
+        
+    p=Pool(processes = worker)
+
+    for pIte, core_id in zip(p._pool, coreID):
+        os.system(f"taskset -p -c {core_id} {pIte.pid}")
     # func_ = partial(task,**kwargs)
     func_ = partial(func,**kwargs)
 #     res = list(tqdm(p.imap_unordered(func_, iterable), total=len(iterable)))
